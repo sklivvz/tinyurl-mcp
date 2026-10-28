@@ -1,0 +1,5 @@
+{
+  "tokenFile": "/path/to/private/tinyurl-api-token",
+  "stateDir": "/path/to/private/tinyurl-state",
+  "timeoutMs": 4000
+}

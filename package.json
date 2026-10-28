@@ -1,0 +1,32 @@
+{
+  "name": "tinyurl-mcp",
+  "version": "1.0.0",
+  "description": "A stdio MCP server for exact-alias TinyURL link management.",
+  "type": "module",
+  "bin": {
+    "tinyurl-mcp": "main.mjs"
+  },
+  "scripts": {
+    "start": "node main.mjs",
+    "test": "node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "tinyurl",
+    "url-shortener"
+  ],
+  "license": "MIT",
+  "author": "Marco Cecconi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/sklivvz/tinyurl-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/sklivvz/tinyurl-mcp/issues"
+  },
+  "homepage": "https://github.com/sklivvz/tinyurl-mcp#readme"
+}

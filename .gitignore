@@ -1,0 +1,22 @@
+# Dependencies are not required at runtime, but keep local installs out of Git.
+node_modules/
+
+# Private configuration and credentials.
+.env
+.env.*
+!.env.example
+config.json
+config.*.json
+!config.example.json
+token
+*.token
+secrets/
+
+# Local state and test output.
+tinyurl-state/
+state/
+coverage/
+*.log
+
+# OS/editor files.
+.DS_Store
