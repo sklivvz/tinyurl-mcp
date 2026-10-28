@@ -144,6 +144,40 @@ test('all remaining analytics report endpoints map to their documented paths', a
   }
 });
 
+test('general analytics preserves the live object-shaped dataset and zero total', async () => {
+  const { config } = setup();
+  const bridge = createBridge(config, {
+    fetchImpl: async () => ok({ dataset: { browser: [], os: [], device: [] }, total: 0 }),
+  });
+  const output = await bridge.analyticsReport({ report: 'general', from: '2024-01-01' });
+  assert.deepEqual(output.data, { dataset: { browser: [], os: [], device: [] }, total: 0 });
+  assert.deepEqual(output.bounded, { returned: 0, total: 0, truncated: false });
+});
+
+test('general analytics bounds every object-shaped dimension list and nested children', async () => {
+  const { config } = setup();
+  const buckets = length => Array.from({ length }, (_, index) => ({ name: `bucket-${index}`, value: index }));
+  const bridge = createBridge(config, {
+    fetchImpl: async () => ok({
+      dataset: {
+        browser: [{ name: 'Chrome', value: 1, children: buckets(101) }, ...buckets(100)],
+        os: buckets(101),
+        device: [{ name: 'desktop', value: 99 }],
+      },
+      total: 5,
+    }),
+  });
+  const output = await bridge.analyticsReport({ report: 'general', from: '2024-01-01' });
+  assert.equal(Array.isArray(output.data.dataset), false);
+  assert.equal(output.data.dataset.browser.length, 100);
+  assert.equal(output.data.dataset.os.length, 100);
+  assert.deepEqual(output.data.dataset.device, [{ name: 'desktop', value: 99 }]);
+  assert.equal(output.data.dataset.browser[0].children.length, 100);
+  assert.equal(output.data.dataset.browser[0].childrenTruncated, true);
+  assert.equal(output.data.total, 5);
+  assert.deepEqual(output.bounded, { returned: 201, total: 203, truncated: true });
+});
+
 test('raw analytics logs are paginated locally and every field is type-bounded', async () => {
   const { config } = setup();
   let calls = 0;

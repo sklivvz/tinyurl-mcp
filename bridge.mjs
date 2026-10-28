@@ -896,6 +896,24 @@ export function createBridge(config, { fetchImpl = globalThis.fetch } = {}) {
     return Object.keys(output).length ? output : undefined;
   }
 
+  function sanitizeGeneralDimensions(item) {
+    if (!isPlainObject(item)) return undefined;
+    const dataset = {};
+    let returned = 0;
+    let total = 0;
+    let truncated = false;
+    for (const key of ['browser', 'os', 'device']) {
+      if (item[key] === undefined) continue;
+      if (!Array.isArray(item[key])) stop('response_invalid', `TinyURL returned an unexpected ${key} analytics list.`);
+      const bucket = boundedItems(item[key], MAX_ANALYTICS_ITEMS, sanitizeBucket);
+      dataset[key] = bucket.items;
+      returned += bucket.items.length;
+      total += bucket.total;
+      if (bucket.truncated) truncated = true;
+    }
+    return { dataset, returned, total, truncated };
+  }
+
   function sanitizeAnalyticsReport(report, data) {
     if (!isPlainObject(data)) stop('response_invalid', 'TinyURL returned an unexpected analytics report shape.');
     if (report === 'timeline') {
@@ -917,18 +935,19 @@ export function createBridge(config, { fetchImpl = globalThis.fetch } = {}) {
       };
     }
     if (report === 'general') {
+      if (isPlainObject(data.dataset)) {
+        const dimensions = sanitizeGeneralDimensions(data.dataset);
+        return {
+          data: { dataset: dimensions.dataset, ...(count(data.total) !== undefined ? { total: data.total } : {}) },
+          bounded: { returned: dimensions.returned, total: dimensions.total, truncated: dimensions.truncated },
+        };
+      }
       let truncated = false;
       const dataset = boundedItems(data.dataset, MAX_ANALYTICS_ITEMS, item => {
-        if (!isPlainObject(item)) return undefined;
-        const out = {};
-        for (const key of ['browser', 'os', 'device']) {
-          if (item[key] === undefined) continue;
-          if (!Array.isArray(item[key])) stop('response_invalid', `TinyURL returned an unexpected ${key} analytics list.`);
-          const bucket = boundedItems(item[key], MAX_ANALYTICS_ITEMS, sanitizeBucket);
-          out[key] = bucket.items;
-          if (bucket.truncated) truncated = true;
-        }
-        return out;
+        const dimensions = sanitizeGeneralDimensions(item);
+        if (dimensions === undefined) return undefined;
+        if (dimensions.truncated) truncated = true;
+        return dimensions.dataset;
       });
       if (dataset.truncated) truncated = true;
       return {
